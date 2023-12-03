@@ -95,18 +95,43 @@ def initialize_client_and_bucket(bucket_name):
     return storage_client, bucket
 
 def load_stats(bucket, SCALER_BLOB_NAME='scaler/normalization_stats.json'):
+    """Load the normalization statistics from GCS
+
+    Args:
+        bucket (storage.bucket.Bucket): A GCS bucket object
+        SCALER_BLOB_NAME (str): Name of the blob containing the normalization statistics
+    
+    Returns:
+        Dict: A dictionary containing the normalization statistics"""
     scaler_blob = bucket.blob(SCALER_BLOB_NAME)
     stats_str = scaler_blob.download_as_text()
     stats = json.loads(stats_str)
     return stats
 
 def load_min_max_values(bucket, MIN_MAX_BLOB_NAME='model/min_max_values.json'):
+    """Load the min/max values from GCS
+
+    Args:
+        bucket (storage.bucket.Bucket): A GCS bucket object
+        MIN_MAX_BLOB_NAME (str): Name of the blob containing the min/max values
+    
+    Returns:
+        Dict: A dictionary containing the min/max values"""
     min_max_blob = bucket.blob(MIN_MAX_BLOB_NAME)
     min_max_str = min_max_blob.download_as_text()
     min_max_values = json.loads(min_max_str)
     return min_max_values
 
 def load_model(bucket, bucket_name):
+    """Load the model from GCS
+
+    Args:
+        bucket (storage.bucket.Bucket): A GCS bucket object
+        bucket_name (str): Name of the GCS bucket
+    
+    Returns:
+        joblib.Model: A joblib model object"""
+    
     latest_model_blob_name = fetch_latest_model(bucket_name)
     local_model_file_name = os.path.basename(latest_model_blob_name)
     model_blob = bucket.blob(latest_model_blob_name)
@@ -115,6 +140,14 @@ def load_model(bucket, bucket_name):
     return model
 
 def fetch_latest_model(bucket_name, prefix="model/model_"):
+    """Fetch the latest model from GCS
+
+    Args:
+        bucket_name (str): Name of the GCS bucket
+        prefix (str): Prefix of the model files
+    
+    Returns:
+        str: Name of the latest model file"""
     storage_client = storage.Client()
     blobs = storage_client.list_blobs(bucket_name, prefix=prefix)
     blob_names = [blob.name for blob in blobs]
@@ -124,6 +157,14 @@ def fetch_latest_model(bucket_name, prefix="model/model_"):
     return latest_blob_name
 
 def normalize_data(instance, stats):
+    """Normalize the data using the normalization statistics
+
+    Args:
+        instance (Dict): A dictionary containing the instance data
+        stats (Dict): A dictionary containing the normalization statistics
+
+    Returns:
+        Dict: A dictionary containing the normalized instance data"""
     normalized_instance = {}
     for feature, value in instance.items():
         mean = stats["mean"].get(feature, 0)

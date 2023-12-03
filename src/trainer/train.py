@@ -31,12 +31,29 @@ MODEL_DIR = os.getenv("AIP_MODEL_DIR")
 
 
 def load_data(gcs_train_data_path):
+    """Loads data into a pandas DataFrame from Google Cloud Storage.""
+
+    Args:
+        gcs_train_data_path (str): path to training data in GCS
+    
+    Returns:
+        df (pandas.DataFrame): training data
+    """
     logger.log_text(f"Loading training data from {gcs_train_data_path}.")
     with fs.open(gcs_train_data_path) as f:
         df = pd.read_csv(f)
     return df
 
 def normalize_data(data, stats):
+    """Normalizes data using the mean and standard deviation from the training data.
+
+    Args:
+        data (pandas.DataFrame): data to normalize
+        stats (dict): mean and standard deviation for each column in the training data
+    
+    Returns:
+        normalized_df (pandas.DataFrame): normalized data
+    """
     logger.log_text("Normalizing the data.")
     normalized_data = {}
     for column in data.columns:
@@ -47,16 +64,39 @@ def normalize_data(data, stats):
     return normalized_df
 
 def calculate_min_max(df):
+    """Calculates the min and max values for each column in the training data.
+
+    Args:
+        df (pandas.DataFrame): training data
+
+    Returns:
+        min_max_values (dict): min and max values for each column in the training data
+    """
     min_max_values = df.agg(['min', 'max']).to_dict()
     return min_max_values
 
 def save_min_max_to_gcs(min_max_values, gcs_path):
+    """Saves the min and max values to Google Cloud Storage.
+
+    Args:
+        min_max_values (dict): min and max values for each column in the training data
+        gcs_path (str): path to save the min and max values in GCS
+    """
     logger.log_text(f"Saving min-max values to {gcs_path}.")
     min_max_json = json.dumps(min_max_values)
     with fs.open(gcs_path, 'w') as f:
         f.write(min_max_json)
 
 def data_transform(df):
+    """Transforms the data for training.
+
+    Args:
+        df (pandas.DataFrame): training data
+    
+    Returns:
+        X_train (pandas.DataFrame): training data without target column
+        y_train (pandas.DataFrame): target column
+    """
     logger.log_text("Transforming the data.")
     blob_path = 'scaler/normalization_stats.json'
     bucket = storage_client.bucket(bucket_name)
@@ -72,16 +112,33 @@ def data_transform(df):
     return X_train, y_train
 
 def train_model(X_train, y_train):
+    """Trains the Random Forest Regressor model.
+
+    Args:
+        X_train (pandas.DataFrame): training data without target column
+        y_train (pandas.DataFrame): target column
+
+    Returns:
+        model (sklearn.ensemble.RandomForestRegressor): trained model
+    """
     logger.log_text("Training the Random Forest Regressor model.")
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     return model
 
 def save_and_upload_model(model, local_model_path, gcs_model_path):
+    """Saves the model locally and uploads it to Google Cloud Storage.
+
+    Args:
+        model (sklearn.ensemble.RandomForestRegressor): trained model
+        local_model_path (str): path to save the model locally
+        gcs_model_path (str): path to save the model in GCS
+    """
     logger.log_text(f"Saving and uploading the model to {gcs_model_path}.")
     joblib.dump(model, local_model_path)
     with fs.open(gcs_model_path, 'wb') as f:
         joblib.dump(model, f)
+        
 def main():
     # Load data
     gcs_train_data_path = "gs://mlops_fall2023/data/train/train_data.csv"

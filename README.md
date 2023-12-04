@@ -252,6 +252,10 @@ Create a new account in [Looker](https://looker.com/) and create a new project. 
 
 Repeat these steps for each of the features in the dataset.
 
+Report Link: https://lookerstudio.google.com/reporting/df4c3804-aec6-411e-be69-30572d6afe68 <br>
+Video Link: https://youtu.be/rE-t-W4_4to
+
+
 
 
 
